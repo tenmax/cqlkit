@@ -17,7 +17,8 @@ task createAllStartScripts() << {
 }
 
 def scripts = [ 'cql2csv': 'io.tenmax.cqlkit.CQL2CSV',
-                'cql2json':'io.tenmax.cqlkit.CQL2JSON'
+                'cql2json':'io.tenmax.cqlkit.CQL2JSON',
+                'cql2cql':'io.tenmax.cqlkit.CQL2CQL'
 ]
     scripts.each() { scriptName, className ->
     def t = tasks.create(name: scriptName+'StartScript', type: CreateStartScripts) {
