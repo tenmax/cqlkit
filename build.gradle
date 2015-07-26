@@ -1,0 +1,47 @@
+
+apply plugin: 'java'
+apply plugin: 'application'
+
+repositories {
+    jcenter()
+}
+
+mainClassName = 'io.tenmax.cqlkit.CQL2CSV'
+
+
+startScripts {
+    applicationName = 'cql2csv'
+}
+
+task createAllStartScripts() << {
+}
+
+def scripts = [ 'cql2csv': 'io.tenmax.cqlkit.CQL2CSV',
+                'cql2json':'io.tenmax.cqlkit.CQL2JSON'
+]
+    scripts.each() { scriptName, className ->
+    def t = tasks.create(name: scriptName+'StartScript', type: CreateStartScripts) {
+        mainClassName = className
+        applicationName = scriptName
+        outputDir = new File(project.buildDir, 'scripts')
+        classpath = jar.outputs.files + project.configurations.runtime
+    }
+    applicationDistribution.into("bin") {
+        from(t)
+        fileMode = 0755
+    }
+    createAllStartScripts.dependsOn(t)
+}
+
+dependencies {
+    compile 'com.datastax.cassandra:cassandra-driver-core:2.1.7.1'
+    compile 'commons-cli:commons-cli:1.3.1'
+    compile 'org.slf4j:slf4j-api:1.7.12',
+            'org.slf4j:slf4j-nop:1.7.12'
+    compile 'commons-cli:commons-cli:1.3.1'
+    compile 'com.google.code.gson:gson:2.3.1'
+    compile 'org.apache.commons:commons-csv:1.1'
+
+
+    testCompile 'junit:junit:4.12'
+}
