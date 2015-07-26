@@ -5,8 +5,11 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import org.apache.commons.cli.*;
+import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.configuration.HierarchicalINIConfiguration;
 
 import java.io.*;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.StreamSupport;
 
@@ -16,6 +19,7 @@ import java.util.stream.StreamSupport;
  */
 public abstract class AbstractMapper {
     protected CommandLine commandLine;
+    protected HierarchicalINIConfiguration cqlshrc;
     protected boolean lineNumberEnabled = false;
     protected AtomicInteger lineNumber = new AtomicInteger(1);
     protected Session session;
@@ -23,9 +27,12 @@ public abstract class AbstractMapper {
     protected void prepareOptions(Options options) {
         options.addOption( "q", "query", true, "The CQL query to execute. If specified, it overrides FILE and STDIN." );
         options.addOption( "c", true, "The contact point." );
-        options.addOption( "d", true, "The database to use." );
+        options.addOption( "u", true, "The user to authenticate." );
+        options.addOption( "p", true, "The password to authenticate." );
+        options.addOption( "k", true, "The keyspace to use." );
         options.addOption( "v", "version", false, "Print the version" );
         options.addOption( "h", "help", false, "Show the help and exit" );
+        options.addOption( "", "cqlshrc", true, "Use an alternative cqlshrc file location, path." );
     }
 
     abstract protected void printHelp(Options options);
@@ -41,6 +48,7 @@ public abstract class AbstractMapper {
 
     public void main(String[] args) {
         commandLine = parseArguments(args);
+        cqlshrc = parseCqlRc();
         run();
     }
 
@@ -73,12 +81,35 @@ public abstract class AbstractMapper {
         return commandLine;
     }
 
+    private HierarchicalINIConfiguration parseCqlRc() {
 
+
+
+        File file = new File(System.getProperty("user.home") + "/.cassandra/cqlshrc");
+        if (commandLine.hasOption("cqlshrc")) {
+            file = new File(commandLine.getOptionValue("cqlshrc"));
+            if(!file.exists()) {
+                System.err.println("cqlshrc file not found: " + file);
+                System.exit(-1);
+            }
+        }
+
+        if(file.exists()) {
+            try {
+                HierarchicalINIConfiguration configuration = new HierarchicalINIConfiguration(file);
+                return configuration;
+            } catch (ConfigurationException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        return null;
+    }
 
     private void run() {
         BufferedReader in = null;
 
-        try(SessionFactory sessionFactory = SessionFactory.newInstance(commandLine)) {
+        try(SessionFactory sessionFactory = SessionFactory.newInstance(commandLine, cqlshrc)) {
             session = sessionFactory.getSession();
 
             String cql;
@@ -98,11 +129,6 @@ public abstract class AbstractMapper {
 
             // output
             PrintStream out = System.out;
-
-            // Change the db
-            if (commandLine.hasOption("d")) {
-                session.execute("use " + commandLine.getOptionValue("d"));
-            }
 
             // Query
             ResultSet rs = session.execute(cql);

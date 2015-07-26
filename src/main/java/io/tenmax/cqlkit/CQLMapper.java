@@ -24,8 +24,9 @@ public class CQLMapper extends AbstractMapper {
     protected void prepareOptions(Options options) {
         super.prepareOptions(options);
 
-        options.addOption( "T", "template", true, "The template of CQL statements. The format is " +
-                "the same as PreparedStatement." );
+        options.addOption("T", "template", true, "The template of CQL statements. The format is " +
+                "the same as PreparedStatement.");
+        options.getOption("T").setRequired(true);
     }
 
     @Override
@@ -49,7 +50,24 @@ public class CQLMapper extends AbstractMapper {
     @Override
     protected void head(ColumnDefinitions columnDefinitions, PrintStream out) {
         template = commandLine.getOptionValue("T");
+        if(template == null) {
+            System.err.println("Template not specified");
+            System.exit(1);
+        }
+
+        int matches = 0;
+        Matcher matcher = pattern.matcher(template);
+        while(matcher.find()) {
+            matches++;
+        }
+
         definitions = columnDefinitions.asList().toArray(new ColumnDefinitions.Definition[]{});
+
+        if(matches != definitions.length) {
+            System.err.printf("Template argument count mismtach! %d != %d\n",
+                    matches, definitions.length);
+            System.exit(1);
+        }
     }
 
     @Override
