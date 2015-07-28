@@ -9,7 +9,11 @@ import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.HierarchicalINIConfiguration;
 
 import java.io.*;
-import java.util.Optional;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.StreamSupport;
 
@@ -32,7 +36,8 @@ public abstract class AbstractMapper {
         options.addOption( "k", true, "The keyspace to use." );
         options.addOption( "v", "version", false, "Print the version" );
         options.addOption( "h", "help", false, "Show the help and exit" );
-        options.addOption( "", "cqlshrc", true, "Use an alternative cqlshrc file location, path." );
+        options.addOption( "cqlshrc", true, "Use an alternative cqlshrc file location, path." );
+        options.addOption( "p", "parallel", true, "The level of parallelism to run the task. Default is sequential." );
     }
 
     abstract protected void printHelp(Options options);
@@ -109,6 +114,16 @@ public abstract class AbstractMapper {
     private void run() {
         BufferedReader in = null;
 
+
+        boolean parallel = commandLine.hasOption("parallel");
+        Executor executor = null;
+        if(parallel) {
+            int parallelism = Integer.parseInt(commandLine.getOptionValue("parallel"));
+            executor = new ForkJoinPool(parallelism);
+        }
+
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
+
         try(SessionFactory sessionFactory = SessionFactory.newInstance(commandLine, cqlshrc)) {
             session = sessionFactory.getSession();
 
@@ -132,20 +147,24 @@ public abstract class AbstractMapper {
 
             // Query
             ResultSet rs = session.execute(cql);
-
             head(rs.getColumnDefinitions(), out);
-
-
-
-
 
             lineNumberEnabled = commandLine.hasOption("l");
 
             do {
-                StreamSupport
-                    .stream(rs.spliterator(), false)
-                    .map(this::map)
-                    .forEach(out::println);
+                final ResultSet rs_ = rs;
+                Runnable task = () -> {
+                    StreamSupport
+                            .stream(rs_.spliterator(), false)
+                            .map(this::map)
+                            .forEach(out::println);
+                };
+
+                if(parallel) {
+                    futures.add(CompletableFuture.runAsync(task, executor));
+                } else {
+                    task.run();
+                }
 
                 if(argQuery) {
                     break;
@@ -158,6 +177,11 @@ public abstract class AbstractMapper {
                 }
                 rs = session.execute(cql);
             } while(true);
+
+            if(parallel) {
+                CompletableFuture.allOf(futures.toArray(new CompletableFuture[]{}))
+                        .join();
+            }
 
         } catch (IOException e) {
             throw new RuntimeException(e);
