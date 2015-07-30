@@ -1,20 +1,22 @@
 package io.tenmax.cqlkit;
 
-import com.datastax.driver.core.ColumnDefinitions;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Session;
+import com.datastax.driver.core.*;
+import com.datastax.driver.core.querybuilder.QueryBuilder;
+import com.datastax.driver.core.querybuilder.Select;
 import org.apache.commons.cli.*;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.HierarchicalINIConfiguration;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 /**
@@ -25,19 +27,47 @@ public abstract class AbstractMapper {
     protected CommandLine commandLine;
     protected HierarchicalINIConfiguration cqlshrc;
     protected boolean lineNumberEnabled = false;
+    protected boolean isQueryKeys = true;
+
     protected AtomicInteger lineNumber = new AtomicInteger(1);
     protected Session session;
+    private AtomicInteger completeJobs = new AtomicInteger(0);
+    private  int totalJobs;
 
     protected void prepareOptions(Options options) {
-        options.addOption( "q", "query", true, "The CQL query to execute. If specified, it overrides FILE and STDIN." );
+        OptionGroup queryGroup = new OptionGroup();
+
+        queryGroup.addOption(Option
+                .builder("q")
+                .longOpt("query")
+                .hasArg(true)
+                .argName("CQL")
+                .desc("The CQL query to execute. If specified, it overrides FILE and STDIN.")
+                .build());
+        queryGroup.addOption(Option
+                .builder()
+                .longOpt("queryKeys")
+                .hasArg(true)
+                .argName("COLUMN_FAMILTY")
+                .desc("Query the partition key(s) for a column family.")
+                .build());
+        options.addOptionGroup(queryGroup);
+
+
         options.addOption( "c", true, "The contact point." );
         options.addOption( "u", true, "The user to authenticate." );
         options.addOption( "p", true, "The password to authenticate." );
         options.addOption( "k", true, "The keyspace to use." );
         options.addOption( "v", "version", false, "Print the version" );
         options.addOption( "h", "help", false, "Show the help and exit" );
-        options.addOption( "cqlshrc", true, "Use an alternative cqlshrc file location, path." );
-        options.addOption( "p", "parallel", true, "The level of parallelism to run the task. Default is sequential." );
+
+        options.addOption(Option.builder()
+                .longOpt("cqlshrc")
+                .hasArg(true)
+                .desc("Use an alternative cqlshrc file location, path.")
+                .build());
+
+        options.addOption( "P", "parallel", true, "The level of parallelism to run the task. Default is sequential." );
     }
 
     abstract protected void printHelp(Options options);
@@ -51,7 +81,7 @@ public abstract class AbstractMapper {
 
     abstract protected String map(Row row);
 
-    public void main(String[] args) {
+    public void start(String[] args) {
         commandLine = parseArguments(args);
         cqlshrc = parseCqlRc();
         run();
@@ -115,7 +145,7 @@ public abstract class AbstractMapper {
         BufferedReader in = null;
 
 
-        boolean parallel = commandLine.hasOption("parallel");
+        boolean parallel = commandLine.hasOption("P");
         Executor executor = null;
         if(parallel) {
             int parallelism = Integer.parseInt(commandLine.getOptionValue("parallel"));
@@ -127,37 +157,129 @@ public abstract class AbstractMapper {
         try(SessionFactory sessionFactory = SessionFactory.newInstance(commandLine, cqlshrc)) {
             session = sessionFactory.getSession();
 
-            String cql;
-
             // The query source
-            boolean argQuery = commandLine.hasOption("q");
-            if (argQuery) {
-                cql = commandLine.getOptionValue("q");
-            } else if (commandLine.getArgs().length > 0) {
-                in = new BufferedReader(
-                        new FileReader(commandLine.getArgs()[0]));
-                cql = in.readLine();
+            Iterator<String> cqls = null;
+            if (commandLine.hasOption("q")) {
+                cqls = Arrays
+                        .asList(commandLine.getOptionValue("q"))
+                        .iterator();
+            } else if (commandLine.hasOption("queryKeys")) {
+                String keyspace = session.getLoggedKeyspace();
+                String table = commandLine.getOptionValue("queryKeys");
+                if(keyspace == null) {
+                    System.err.println("no keyspace specified");
+                    System.exit(1);
+                }
+
+                Cluster cluster = sessionFactory.getCluster();
+                List<String> partitionKeys = cluster
+                        .getMetadata()
+                        .getKeyspace(keyspace)
+                        .getTable(table)
+                        .getPartitionKey()
+                        .stream()
+                        .map(ColumnMetadata::getName)
+                        .collect(Collectors.toList());
+
+
+                // Build the cql
+                cqls = cluster.getMetadata()
+                    .getTokenRanges()
+                    .stream()
+//                    .filter(tokenRange -> {
+//                        long token = (Long)tokenRange.getStart().getValue();
+//                        if(token % 32 == 0) {
+//                            return true;
+//                        } else {
+//                            return false;
+//                        }
+//                    })
+                    .flatMap(tokenRange -> {
+                        ArrayList<String> cqlList = new ArrayList<>();
+                        for (TokenRange subrange : tokenRange.unwrap()) {
+                            String token = QueryBuilder.token(partitionKeys.toArray(new String[]{}));
+
+                            Select.Selection selection = QueryBuilder.select()
+                                    .distinct();
+                            partitionKeys.forEach(column -> selection.column(column));
+
+                            String cql = selection
+                                    .column(token).as("t")
+                                    .from(commandLine.getOptionValue("queryKeys"))
+                                    .where(QueryBuilder.gt(token, subrange.getStart().getValue()))
+                                    .and(QueryBuilder.lte(token, subrange.getEnd().getValue()))
+                                    .toString();
+
+                            cqlList.add(cql);
+
+                        }
+
+
+                        return cqlList.stream();
+                    })
+                    .iterator();
+
             } else {
-                in = new BufferedReader(new InputStreamReader(System.in));
-                cql = in.readLine();
+                if (commandLine.getArgs().length > 0) {
+                    // from file input
+                    in = new BufferedReader(
+                            new FileReader(commandLine.getArgs()[0]));
+                } else {
+                    // from standard input
+                    in = new BufferedReader(
+                            new InputStreamReader(System.in));
+                }
+                cqls = in.lines().iterator();
             }
 
             // output
             PrintStream out = System.out;
+            lineNumberEnabled = commandLine.hasOption("l");
+            isQueryKeys = commandLine.hasOption("queryKeys");
 
             // Query
-            ResultSet rs = session.execute(cql);
-            head(rs.getColumnDefinitions(), out);
+            boolean isFirstCQL = true;
+            while(cqls.hasNext()) {
+                final String cql = cqls.next().trim();
 
-            lineNumberEnabled = commandLine.hasOption("l");
+                if(cql.isEmpty()) {
+                    continue;
+                }
 
-            do {
-                final ResultSet rs_ = rs;
+                // Get the result set definitions.
+                if(isFirstCQL) {
+                    ResultSet rs = session.execute(cql);
+                    head(rs.getColumnDefinitions(), out);
+                    isFirstCQL = false;
+                }
+
                 Runnable task = () -> {
-                    StreamSupport
-                            .stream(rs_.spliterator(), false)
-                            .map(this::map)
-                            .forEach(out::println);
+                    int retry = 3;
+                    try {
+                        do {
+                            try {
+                                ResultSet rs = session.execute(cql);
+                                StreamSupport
+                                        .stream(rs.spliterator(), false)
+                                        .map(this::map)
+                                        .forEach(out::println);
+                            } catch (Exception e) {
+
+                                if (retry > 0) {
+                                    retry--;
+                                    continue;
+                                }
+                                System.err.println("Error when execute cql: " + cql);
+                                throw e;
+                            }
+                        } while (false);
+                    } finally {
+                        if(parallel) {
+                            System.err.printf("Complete: %d/%d\n",
+                                    completeJobs.incrementAndGet(),
+                                    totalJobs);
+                        }
+                    }
                 };
 
                 if(parallel) {
@@ -165,21 +287,13 @@ public abstract class AbstractMapper {
                 } else {
                     task.run();
                 }
+                totalJobs++;
+            }
 
-                if(argQuery) {
-                    break;
-                }
-
-                // Read the next statement
-                cql = in.readLine();
-                if(cql == null || "".equals(cql.trim())) {
-                    break;
-                }
-                rs = session.execute(cql);
-            } while(true);
-
+            // Wait for all futures completion
             if(parallel) {
-                CompletableFuture.allOf(futures.toArray(new CompletableFuture[]{}))
+                CompletableFuture
+                        .allOf(futures.toArray(new CompletableFuture[]{}))
                         .join();
             }
 

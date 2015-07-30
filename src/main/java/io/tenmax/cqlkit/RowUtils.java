@@ -3,6 +3,7 @@ package io.tenmax.cqlkit;
 import com.datastax.driver.core.*;
 import com.google.gson.*;
 
+import java.net.InetAddress;
 import java.util.*;
 
 public class RowUtils {
@@ -12,7 +13,9 @@ public class RowUtils {
         Object value)
     {
         if(type.asJavaClass() == String.class) {
-            return (String)value;
+            return (String) value;
+        } else if(type.asJavaClass() == InetAddress.class) {
+            return ((InetAddress)value).getHostAddress();
         } else {
             return type.format(value);
         }

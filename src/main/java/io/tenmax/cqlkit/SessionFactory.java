@@ -14,7 +14,7 @@ import java.util.Optional;
 public class SessionFactory implements AutoCloseable{
     private static SessionFactory instance;
 
-    private Cluster cluser;
+    private Cluster cluster;
     private Session session;
 
     private SessionFactory(CommandLine commandLine,
@@ -53,19 +53,19 @@ public class SessionFactory implements AutoCloseable{
         }
 
 
-        cluser = builder.build();
+        cluster = builder.build();
 
         // Change the db
         if (commandLine.hasOption("k")) {
-            session = cluser.connect(commandLine.getOptionValue("k"));
+            session = cluster.connect(commandLine.getOptionValue("k"));
         } else {
             String keyspace = authOpt
                     .map(auth -> auth.getString("keyspace"))
                     .orElse(null);
             if(keyspace != null) {
-                session = cluser.connect(keyspace);
+                session = cluster.connect(keyspace);
             } else {
-                session = cluser.connect();
+                session = cluster.connect();
             }
         }
     }
@@ -80,12 +80,16 @@ public class SessionFactory implements AutoCloseable{
         return instance;
     }
 
+    public Cluster getCluster() {
+        return cluster;
+    }
+
     public Session getSession() {
         return session;
     }
 
     public void close() {
         session.close();
-        cluser.close();
+        cluster.close();
     }
 }
