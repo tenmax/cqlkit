@@ -8,14 +8,12 @@ import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.HierarchicalINIConfiguration;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.MemoryHandler;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -223,6 +221,7 @@ public abstract class AbstractMapper {
                     isFirstCQL = false;
                 }
 
+                final boolean _parallel = parallel;
                 Runnable task = () -> {
                     int retry = 3;
                     try {
@@ -244,8 +243,8 @@ public abstract class AbstractMapper {
                             }
                         } while (false);
                     } finally {
-                        if(parallel) {
-                            System.err.printf("Complete: %d/%d\n",
+                        if(_parallel) {
+                            System.err.printf("Progress: %d/%d\n",
                                     completeJobs.incrementAndGet(),
                                     totalJobs);
                         }
@@ -349,10 +348,13 @@ public abstract class AbstractMapper {
             System.exit(1);
         }
 
-        List<String> partitionKeys = cluster
-                .getMetadata()
-                .getKeyspace(keyspace)
-                .getTable(table)
+        TableMetadata tableMetadata = cluster.getMetadata().getKeyspace(keyspace).getTable(table);
+        if(tableMetadata == null) {
+            System.err.printf("table '%s' does not exist\n", table);
+            System.exit(1);
+        }
+
+        List<String> partitionKeys = tableMetadata
                 .getPartitionKey()
                 .stream()
                 .map(ColumnMetadata::getName)

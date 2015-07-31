@@ -34,20 +34,29 @@ usage: cql2csv [-c contactpoint] [-q query] [FILE]
 File       The file to use as CQL query. If both FILE and QUERY are
            omitted, query will be read from STDIN.
 
- -c <arg>              The contact point.
- -cqlshrc <arg>        Use an alternative cqlshrc file location, path.
- -h,--help             Show the help and exit
- -H,--no-header-row    Do not output column names.
- -k <arg>              The keyspace to use.
- -l,--linenumbers      Insert a column of line numbers at the front of the
-                       output. Useful when piping to grep or as a simple
-                       primary key.
- -p,--parallel <arg>   The level of parallelism to run the task. Default
-                       is sequential.
- -q,--query <arg>      The CQL query to execute. If specified, it
-                       overrides FILE and STDIN.
- -u <arg>              The user to authenticate.
- -v,--version          Print the version
+ -c <arg>                            The contact point.
+    --cqlshrc <arg>                  Use an alternative cqlshrc file
+                                     location, path.
+ -h,--help                           Show the help and exit
+ -H,--no-header-row                  Do not output column names.
+ -k <arg>                            The keyspace to use.
+ -l,--linenumbers                    Insert a column of line numbers at
+                                     the front of the output. Useful when
+                                     piping to grep or as a simple primary
+                                     key.
+ -p <arg>                            The password to authenticate.
+ -P,--parallel <arg>                 The level of parallelism to run the
+                                     task. Default is sequential.
+ -q,--query <CQL>                    The CQL query to execute. If
+                                     specified, it overrides FILE and
+                                     STDIN.
+    --query-partition-keys <TABLE>   Query the partition key(s) for a
+                                     column family.
+    --query-ranges <CQL>             The CQL query would be splitted by
+                                     the token ranges. WHERE clause is not
+                                     allowed in the CQL query
+ -u <arg>                            The user to authenticate.
+ -v,--version                        Print the version
 ```
 
 
@@ -58,22 +67,32 @@ usage: cql2json [-c contactpoint] [-q query] [FILE]
 File       The file to use as CQL query. If both FILE and QUERY are
            omitted, query will be read from STDIN.
 
- -c <arg>                  The contact point.
- -cqlshrc <arg>            Use an alternative cqlshrc file location, path.
- -h,--help                 Show the help and exit
- -j,--json-columns <arg>   The columns that contains json string. The
-                           content would be used as json object instead of
-                           plain text. Columns are separated by comma.
- -k <arg>                  The keyspace to use.
- -l,--linenumbers          Insert a column of line numbers at the front of
-                           the output. Useful when piping to grep or as a
-                           simple primary key.
- -p,--parallel <arg>       The level of parallelism to run the task.
-                           Default is sequential.
- -q,--query <arg>          The CQL query to execute. If specified, it
-                           overrides FILE and STDIN.
- -u <arg>                  The user to authenticate.
- -v,--version              Print the version
+ -c <arg>                            The contact point.
+    --cqlshrc <arg>                  Use an alternative cqlshrc file
+                                     location, path.
+ -h,--help                           Show the help and exit
+ -j,--json-columns <arg>             The columns that contains json
+                                     string. The content would be used as
+                                     json object instead of plain text.
+                                     Columns are separated by comma.
+ -k <arg>                            The keyspace to use.
+ -l,--linenumbers                    Insert a column of line numbers at
+                                     the front of the output. Useful when
+                                     piping to grep or as a simple primary
+                                     key.
+ -p <arg>                            The password to authenticate.
+ -P,--parallel <arg>                 The level of parallelism to run the
+                                     task. Default is sequential.
+ -q,--query <CQL>                    The CQL query to execute. If
+                                     specified, it overrides FILE and
+                                     STDIN.
+    --query-partition-keys <TABLE>   Query the partition key(s) for a
+                                     column family.
+    --query-ranges <CQL>             The CQL query would be splitted by
+                                     the token ranges. WHERE clause is not
+                                     allowed in the CQL query
+ -u <arg>                            The user to authenticate.
+ -v,--version                        Print the version
 ```
 
 # Setup the cqlshrc
