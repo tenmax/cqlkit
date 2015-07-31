@@ -16,6 +16,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -27,9 +29,10 @@ public abstract class AbstractMapper {
     protected CommandLine commandLine;
     protected HierarchicalINIConfiguration cqlshrc;
     protected boolean lineNumberEnabled = false;
-    protected boolean isQueryKeys = true;
+    protected boolean isRangeQuery = true;
 
     protected AtomicInteger lineNumber = new AtomicInteger(1);
+    protected Cluster cluster;
     protected Session session;
     private AtomicInteger completeJobs = new AtomicInteger(0);
     private  int totalJobs;
@@ -46,9 +49,17 @@ public abstract class AbstractMapper {
                 .build());
         queryGroup.addOption(Option
                 .builder()
-                .longOpt("queryKeys")
+                .longOpt("query-ranges")
                 .hasArg(true)
-                .argName("COLUMN_FAMILTY")
+                .argName("CQL")
+                .desc("The CQL query would be splitted by the token ranges. " +
+                        "WHERE clause is not allowed in the CQL query")
+                .build());
+        queryGroup.addOption(Option
+                .builder()
+                .longOpt("query-partition-keys")
+                .hasArg(true)
+                .argName("TABLE")
                 .desc("Query the partition key(s) for a column family.")
                 .build());
         options.addOptionGroup(queryGroup);
@@ -144,17 +155,26 @@ public abstract class AbstractMapper {
     private void run() {
         BufferedReader in = null;
 
-
-        boolean parallel = commandLine.hasOption("P");
+        boolean parallel = false;
+        int parallelism = 1;
         Executor executor = null;
-        if(parallel) {
-            int parallelism = Integer.parseInt(commandLine.getOptionValue("parallel"));
+
+        if(commandLine.hasOption("P")) {
+            parallelism = Integer.parseInt(commandLine.getOptionValue("parallel"));
+        } else if(commandLine.hasOption("query-ranges") ||
+                  commandLine.hasOption("query-partition-keys")) {
+            parallelism = 256;
+        }
+
+        if(parallelism > 1) {
             executor = new ForkJoinPool(parallelism);
+            parallel = true;
         }
 
         List<CompletableFuture<Void>> futures = new ArrayList<>();
 
         try(SessionFactory sessionFactory = SessionFactory.newInstance(commandLine, cqlshrc)) {
+            cluster = sessionFactory.getCluster();
             session = sessionFactory.getSession();
 
             // The query source
@@ -163,62 +183,10 @@ public abstract class AbstractMapper {
                 cqls = Arrays
                         .asList(commandLine.getOptionValue("q"))
                         .iterator();
-            } else if (commandLine.hasOption("queryKeys")) {
-                String keyspace = session.getLoggedKeyspace();
-                String table = commandLine.getOptionValue("queryKeys");
-                if(keyspace == null) {
-                    System.err.println("no keyspace specified");
-                    System.exit(1);
-                }
-
-                Cluster cluster = sessionFactory.getCluster();
-                List<String> partitionKeys = cluster
-                        .getMetadata()
-                        .getKeyspace(keyspace)
-                        .getTable(table)
-                        .getPartitionKey()
-                        .stream()
-                        .map(ColumnMetadata::getName)
-                        .collect(Collectors.toList());
-
-
-                // Build the cql
-                cqls = cluster.getMetadata()
-                    .getTokenRanges()
-                    .stream()
-//                    .filter(tokenRange -> {
-//                        long token = (Long)tokenRange.getStart().getValue();
-//                        if(token % 32 == 0) {
-//                            return true;
-//                        } else {
-//                            return false;
-//                        }
-//                    })
-                    .flatMap(tokenRange -> {
-                        ArrayList<String> cqlList = new ArrayList<>();
-                        for (TokenRange subrange : tokenRange.unwrap()) {
-                            String token = QueryBuilder.token(partitionKeys.toArray(new String[]{}));
-
-                            Select.Selection selection = QueryBuilder.select()
-                                    .distinct();
-                            partitionKeys.forEach(column -> selection.column(column));
-
-                            String cql = selection
-                                    .column(token).as("t")
-                                    .from(commandLine.getOptionValue("queryKeys"))
-                                    .where(QueryBuilder.gt(token, subrange.getStart().getValue()))
-                                    .and(QueryBuilder.lte(token, subrange.getEnd().getValue()))
-                                    .toString();
-
-                            cqlList.add(cql);
-
-                        }
-
-
-                        return cqlList.stream();
-                    })
-                    .iterator();
-
+            } else if (commandLine.hasOption("query-partition-keys")) {
+                cqls = queryByPartionKeys(sessionFactory);
+            } else if (commandLine.hasOption("query-ranges")) {
+                cqls = queryByRange(sessionFactory);
             } else {
                 if (commandLine.getArgs().length > 0) {
                     // from file input
@@ -235,7 +203,9 @@ public abstract class AbstractMapper {
             // output
             PrintStream out = System.out;
             lineNumberEnabled = commandLine.hasOption("l");
-            isQueryKeys = commandLine.hasOption("queryKeys");
+
+            isRangeQuery = commandLine.hasOption("query-partition-keys") ||
+                           commandLine.hasOption("query-ranges");
 
             // Query
             boolean isFirstCQL = true;
@@ -306,5 +276,134 @@ public abstract class AbstractMapper {
                 } catch (IOException e) {}
             }
         }
+    }
+
+    private Iterator<String> queryByRange(SessionFactory sessionFactory) {
+        Iterator<String> cqls;
+
+        String query = commandLine.getOptionValue("query-ranges");
+
+        if(query.contains("where")) {
+            System.err.println("WHERE is not allowed in query");
+            System.exit(1);
+        }
+
+        List<String> strings = parseKeyspaceAndTable(query);
+        String keyspace = strings.get(0);
+        String table = strings.get(1);
+
+        if(table == null) {
+            System.err.println("Invalid query: " + query);
+        }
+
+        if(keyspace == null) {
+            keyspace = session.getLoggedKeyspace();
+            if(keyspace == null) {
+                System.err.println("no keyspace specified");
+                System.exit(1);
+            }
+        }
+
+        List<String> partitionKeys = cluster
+                .getMetadata()
+                .getKeyspace(keyspace)
+                .getTable(table)
+                .getPartitionKey()
+                .stream()
+                .map(ColumnMetadata::getName)
+                .collect(Collectors.toList());
+
+
+        // Build the cql
+        cqls = cluster.getMetadata()
+                .getTokenRanges()
+                .stream()
+                .flatMap(tokenRange -> {
+                    ArrayList<String> cqlList = new ArrayList<>();
+                    for (TokenRange subrange : tokenRange.unwrap()) {
+                        String token = QueryBuilder.token(partitionKeys.toArray(new String[]{}));
+
+                        String cql = String.format("%s where %s > %d and %s <= %d",
+                                query,
+                                token,
+                                subrange.getStart().getValue(),
+                                token,
+                                subrange.getEnd().getValue());
+
+                        cqlList.add(cql);
+
+                    }
+
+                    return cqlList.stream();
+                })
+                .iterator();
+        return cqls;
+    }
+
+    private Iterator<String> queryByPartionKeys(SessionFactory sessionFactory) {
+        Iterator<String> cqls;
+        String keyspace = session.getLoggedKeyspace();
+        String table = commandLine.getOptionValue("query-partition-keys");
+        if(keyspace == null) {
+            System.err.println("no keyspace specified");
+            System.exit(1);
+        }
+
+        List<String> partitionKeys = cluster
+                .getMetadata()
+                .getKeyspace(keyspace)
+                .getTable(table)
+                .getPartitionKey()
+                .stream()
+                .map(ColumnMetadata::getName)
+                .collect(Collectors.toList());
+
+
+        // Build the cql
+        cqls = cluster.getMetadata()
+            .getTokenRanges()
+            .stream()
+            .flatMap(tokenRange -> {
+                ArrayList<String> cqlList = new ArrayList<>();
+                for (TokenRange subrange : tokenRange.unwrap()) {
+                    String token = QueryBuilder.token(partitionKeys.toArray(new String[]{}));
+
+                    Select.Selection selection = QueryBuilder
+                        .select()
+                        .distinct();
+                    partitionKeys.forEach(column -> selection.column(column));
+
+                    String cql = selection
+                            .from(commandLine.getOptionValue("query-partition-keys"))
+                            .where(QueryBuilder.gt(token, subrange.getStart().getValue()))
+                            .and(QueryBuilder.lte(token, subrange.getEnd().getValue()))
+                            .toString();
+
+                    cqlList.add(cql);
+
+                }
+
+
+                return cqlList.stream();
+            })
+            .iterator();
+        return cqls;
+    }
+
+    public static List<String> parseKeyspaceAndTable(String query) {
+        String regex = "select .* from ((?<keyspace>[a-zA-Z_0-9]*)\\.)?(?<table>[a-zA-Z_0-9]*)\\W?.*";
+
+        String keyspace = null;
+        String table = null;
+
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(query);
+        if(matcher.find()) {
+            keyspace = matcher.group("keyspace");
+            table = matcher.group("table");
+
+        }
+
+        return Arrays.asList(keyspace, table);
     }
 }

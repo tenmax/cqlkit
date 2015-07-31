@@ -1,6 +1,7 @@
 package io.tenmax.cqlkit;
 
 import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.KeyspaceMetadata;
 import com.datastax.driver.core.Session;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.configuration.HierarchicalINIConfiguration;
@@ -55,18 +56,27 @@ public class SessionFactory implements AutoCloseable{
 
         cluster = builder.build();
 
+        session = cluster.connect();
+
         // Change the db
+        String keyspaceName = null;
+
         if (commandLine.hasOption("k")) {
-            session = cluster.connect(commandLine.getOptionValue("k"));
+
+            keyspaceName = commandLine.getOptionValue("k");
         } else {
-            String keyspace = authOpt
+            keyspaceName= authOpt
                     .map(auth -> auth.getString("keyspace"))
                     .orElse(null);
-            if(keyspace != null) {
-                session = cluster.connect(keyspace);
-            } else {
-                session = cluster.connect();
+        }
+        if(keyspaceName != null) {
+            KeyspaceMetadata keyspaceMetadata = cluster.getMetadata().getKeyspace(keyspaceName);
+            if(keyspaceMetadata == null) {
+                System.err.printf("Keyspace '%s' does not exist\n", keyspaceName);
+                System.exit(1);
             }
+
+            session.execute("use " + keyspaceName);
         }
     }
 

@@ -2,7 +2,6 @@ package io.tenmax.cqlkit;
 
 import com.datastax.driver.core.ColumnDefinitions;
 import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Token;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.csv.CSVFormat;
@@ -90,11 +89,11 @@ public class CQL2CSV extends AbstractMapper{
                 csvPrinter.print(value);
             }
 
-            if (isQueryKeys) {
-                Token t = row.getToken("t");
-                String token = String.format("%.2f%%", (((Long) t.getValue() >> 48) + 32768) / 65535f * 100);
-                csvPrinter.print(token);
-            }
+//            if (isRangeQuery) {
+//                Token t = row.getPartitionKeyToken();
+//                String token = String.format("%.2f%%", (((Long) t.getValue() >> 48) + 32768) / 65535f * 100);
+//                csvPrinter.print(token);
+//            }
 
         } catch (Exception e) {
             throw new RuntimeException(e);
