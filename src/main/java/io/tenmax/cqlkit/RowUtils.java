@@ -4,9 +4,12 @@ import com.datastax.driver.core.*;
 import com.google.gson.*;
 
 import java.net.InetAddress;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class RowUtils {
+    private static DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
 
     public static String toString(
         DataType type,
@@ -15,7 +18,9 @@ public class RowUtils {
         if(type.asJavaClass() == String.class) {
             return (String) value;
         } else if(type.asJavaClass() == InetAddress.class) {
-            return ((InetAddress)value).getHostAddress();
+            return ((InetAddress) value).getHostAddress();
+        } else if(type.getName() == DataType.Name.TIMESTAMP) {
+            return toDateString((Date) value);
         } else {
             return type.format(value);
         }
@@ -58,7 +63,8 @@ public class RowUtils {
             case TIMEUUID:
                 return new JsonPrimitive(type.format(value));
             case TIMESTAMP:
-                return new JsonPrimitive(((Date)value).getTime());
+                return new JsonPrimitive(toDateString((Date)value));
+                //return new JsonPrimitive(((Date)value).getTime());
             case LIST:
             case SET:
                 return collectionToJson(type, (Collection)value, jsonColumn);
@@ -71,6 +77,10 @@ public class RowUtils {
                 throw new UnsupportedOperationException(
                         "The type is not supported now: " + type.getName());
         }
+    }
+
+    public static void setDateFormat(String pattern) {
+        dateFormat = new SimpleDateFormat(pattern);
     }
 
     private static JsonElement mapToJson(
@@ -101,5 +111,9 @@ public class RowUtils {
             }
         });
         return array;
+    }
+
+    private static String toDateString(Date date) {
+        return dateFormat.format(date);
     }
 }

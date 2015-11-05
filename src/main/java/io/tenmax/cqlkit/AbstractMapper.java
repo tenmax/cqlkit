@@ -76,6 +76,20 @@ public abstract class AbstractMapper {
                 .desc("Use an alternative cqlshrc file location, path.")
                 .build());
 
+        options.addOption(Option
+                .builder()
+                .longOpt("consistency")
+                .hasArg(true)
+                .argName("LEVEL")
+                .desc("The consistency level. The level should be 'any', 'one', 'two', 'three', 'quorum', 'all', 'local_quorum', 'each_quorum', 'serial' or 'local_serial'.")
+                .build());
+
+        options.addOption(Option.builder()
+                .longOpt("date-format")
+                .hasArg(true)
+                .desc("Use a custom date format. Default is \"yyyy-MM-dd'T'HH:mm:ss.SSSZ\"")
+                .build());
+
         options.addOption( "P", "parallel", true, "The level of parallelism to run the task. Default is sequential." );
     }
 
@@ -117,6 +131,26 @@ public abstract class AbstractMapper {
                 printVersion();
             } else {
 
+            }
+
+            if( commandLine.hasOption("consistency")) {
+                String consistency = commandLine.getOptionValue("consistency");
+                try {
+                    ConsistencyLevel.valueOf(consistency.toUpperCase());
+                } catch (Exception e) {
+                    System.err.println("Invalid consistency level: " + consistency);
+                    printHelp(options);
+                }
+            }
+
+            if( commandLine.hasOption("date-format")) {
+                String pattern = commandLine.getOptionValue("date-format");
+                try {
+                    RowUtils.setDateFormat(pattern);
+                } catch (Exception e) {
+                    System.err.println("Invalid date format: " + pattern);
+                    printHelp(options);
+                }
             }
         } catch (ParseException e) {
             System.out.println( "Unexpected exception:" + e.getMessage() );
@@ -205,6 +239,13 @@ public abstract class AbstractMapper {
             isRangeQuery = commandLine.hasOption("query-partition-keys") ||
                            commandLine.hasOption("query-ranges");
 
+
+            ConsistencyLevel consistencyLevel =
+                    commandLine.hasOption("consistency") ?
+                    ConsistencyLevel.valueOf(commandLine.getOptionValue("consistency").toUpperCase()) :
+                    ConsistencyLevel.ONE;
+
+
             // Query
             boolean isFirstCQL = true;
             while(cqls.hasNext()) {
@@ -227,7 +268,10 @@ public abstract class AbstractMapper {
                     try {
                         do {
                             try {
-                                ResultSet rs = session.execute(cql);
+                                SimpleStatement stmt = new SimpleStatement(cql);
+                                stmt.setConsistencyLevel(consistencyLevel);
+                                ResultSet rs = session.execute(stmt);
+
                                 StreamSupport
                                         .stream(rs.spliterator(), false)
                                         .map(this::map)
