@@ -13,7 +13,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.MemoryHandler;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -82,6 +81,14 @@ public abstract class AbstractMapper {
                 .hasArg(true)
                 .argName("LEVEL")
                 .desc("The consistency level. The level should be 'any', 'one', 'two', 'three', 'quorum', 'all', 'local_quorum', 'each_quorum', 'serial' or 'local_serial'.")
+                .build());
+
+        options.addOption(Option
+                .builder()
+                .longOpt("fetchSize")
+                .hasArg(true)
+                .argName("SIZE")
+                .desc("The fetch size. Default is " + QueryOptions.DEFAULT_FETCH_SIZE)
                 .build());
 
         options.addOption(Option.builder()
@@ -195,7 +202,7 @@ public abstract class AbstractMapper {
             parallelism = Integer.parseInt(commandLine.getOptionValue("parallel"));
         } else if(commandLine.hasOption("query-ranges") ||
                   commandLine.hasOption("query-partition-keys")) {
-            parallelism = 256;
+            parallelism = Runtime.getRuntime().availableProcessors();
         }
 
         if(parallelism > 1) {
@@ -265,8 +272,10 @@ public abstract class AbstractMapper {
                 final boolean _parallel = parallel;
                 Runnable task = () -> {
                     int retry = 3;
+                    int retryCount = 0;
+
                     try {
-                        do {
+                        while(true) {
                             try {
                                 SimpleStatement stmt = new SimpleStatement(cql);
                                 stmt.setConsistencyLevel(consistencyLevel);
@@ -278,14 +287,22 @@ public abstract class AbstractMapper {
                                         .forEach(out::println);
                             } catch (Exception e) {
 
-                                if (retry > 0) {
-                                    retry--;
+                                if (retryCount < retry) {
+                                    retryCount++;
+                                    System.err.printf("%s - Retry %d cql: %s\n", new Date(), retryCount, cql);
+                                    try {
+                                        Thread.sleep(3000);
+                                    } catch (InterruptedException e1) {
+                                    }
                                     continue;
                                 }
                                 System.err.println("Error when execute cql: " + cql);
-                                throw e;
+                                e.printStackTrace();
+                                System.exit(1);
                             }
-                        } while (false);
+
+                            break;
+                        }
                     } finally {
                         if(_parallel) {
                             System.err.printf("Progress: %d/%d\n",

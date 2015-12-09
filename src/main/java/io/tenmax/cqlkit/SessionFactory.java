@@ -1,8 +1,6 @@
 package io.tenmax.cqlkit;
 
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.KeyspaceMetadata;
-import com.datastax.driver.core.Session;
+import com.datastax.driver.core.*;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.configuration.HierarchicalINIConfiguration;
 import org.apache.commons.configuration.SubnodeConfiguration;
@@ -53,6 +51,11 @@ public class SessionFactory implements AutoCloseable{
             }
         }
 
+        if(commandLine.hasOption("fetchSize")) {
+            int fetchSize = Integer.parseInt(commandLine.getOptionValue("fetchSize"));
+            System.err.println("fetch size=" + fetchSize);
+            builder.withQueryOptions(new QueryOptions().setFetchSize(fetchSize));
+        }
 
         cluster = builder.build();
 
