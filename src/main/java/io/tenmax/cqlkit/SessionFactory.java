@@ -25,12 +25,12 @@ public class SessionFactory implements AutoCloseable{
         Optional<HierarchicalINIConfiguration> rcOpt = Optional.ofNullable(cqlshrc);
 
         if(commandLine.hasOption("c")) {
-            builder.addContactPoint(commandLine.getOptionValue("c"));
+            builder.addContactPoints(commandLine.getOptionValue("c").split(","));
         } else {
             rcOpt.map(rc -> rc.getSection("connection"))
                  .map(conn -> conn.getString("hostname"))
                  .ifPresent(hostName -> {
-                     builder.addContactPoint(hostName);
+                     builder.addContactPoints(hostName.split(","));
                  });
         }
 
