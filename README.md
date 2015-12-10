@@ -34,7 +34,9 @@ usage: cql2csv [-c contactpoint] [-q query] [FILE]
 File       The file to use as CQL query. If both FILE and QUERY are
            omitted, query will be read from STDIN.
 
- -c <arg>                            The contact point.
+ -c <arg>                            The contact point. if use multi
+                                     contact points, use ',' to separate
+                                     multi points
     --cqlshrc <arg>                  Use an alternative cqlshrc file
                                      location, path.
  -h,--help                           Show the help and exit

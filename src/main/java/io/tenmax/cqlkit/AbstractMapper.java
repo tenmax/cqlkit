@@ -62,7 +62,7 @@ public abstract class AbstractMapper {
         options.addOptionGroup(queryGroup);
 
 
-        options.addOption( "c", true, "The contact point." );
+        options.addOption( "c", true, "The contact point. if use multi contact points, use ',' to separate multi points" );
         options.addOption( "u", true, "The user to authenticate." );
         options.addOption( "p", true, "The password to authenticate." );
         options.addOption( "k", true, "The keyspace to use." );
