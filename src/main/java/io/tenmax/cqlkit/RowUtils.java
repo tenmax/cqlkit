@@ -114,6 +114,6 @@ public class RowUtils {
     }
 
     private static String toDateString(Date date) {
-        return dateFormat.format(date);
+        return date != null ? dateFormat.format(date) : null;
     }
 }
