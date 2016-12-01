@@ -1,8 +1,11 @@
 package io.tenmax.cqlkit;
 
+import com.datastax.driver.core.CodecRegistry;
 import com.datastax.driver.core.ColumnDefinitions;
 import com.datastax.driver.core.DataType;
 import com.datastax.driver.core.Row;
+import com.datastax.driver.core.TypeCodec;
+
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 
@@ -87,7 +90,8 @@ public class CQL2CQL extends AbstractMapper{
             DataType type = definitions[i].getType();
 
             matcher.find();
-            matcher.appendReplacement(result, type.format(value));
+            TypeCodec<Object> typeCodec = CodecRegistry.DEFAULT_INSTANCE.codecFor(type);
+            matcher.appendReplacement(result, typeCodec.format(value));
         }
 
         matcher.appendTail(result);

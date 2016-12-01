@@ -15,14 +15,15 @@ public class RowUtils {
         DataType type,
         Object value)
     {
-        if(type.asJavaClass() == String.class) {
+    	TypeCodec<Object> typeCodec = CodecRegistry.DEFAULT_INSTANCE.codecFor(type);
+        if(typeCodec.getJavaType().getRawType().getName().equals(String.class.getName())) {
             return (String) value;
-        } else if(type.asJavaClass() == InetAddress.class) {
+        } else if(typeCodec.getJavaType().getRawType().getName().equals(InetAddress.class.getName())) {
             return ((InetAddress) value).getHostAddress();
         } else if(type.getName() == DataType.Name.TIMESTAMP) {
             return toDateString((Date) value);
         } else {
-            return type.format(value);
+            return typeCodec.format(value);
         }
     }
 
@@ -36,10 +37,10 @@ public class RowUtils {
         if(value == null) {
             return null;
         }
-
+        TypeCodec<Object> typeCodec = CodecRegistry.DEFAULT_INSTANCE.codecFor(type);
         switch(type.getName()) {
             case BLOB:
-                return new JsonPrimitive(type.format(value));
+                return new JsonPrimitive(typeCodec.format(value));
             case BOOLEAN:
                 return new JsonPrimitive((Boolean)value);
             case BIGINT:
@@ -61,7 +62,7 @@ public class RowUtils {
             case UUID:
             case INET:
             case TIMEUUID:
-                return new JsonPrimitive(type.format(value));
+                return new JsonPrimitive(typeCodec.format(value));
             case TIMESTAMP:
                 return new JsonPrimitive(toDateString((Date)value));
                 //return new JsonPrimitive(((Date)value).getTime());
