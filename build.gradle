@@ -36,10 +36,7 @@ def scripts = [ 'cql2csv': 'io.tenmax.cqlkit.CQL2CSV',
 
 dependencies {
     // Cassandra Driver
- //   compile 'com.datastax.cassandra:cassandra-driver-core:2.1.7.1'
-	// https://mvnrepository.com/artifact/com.datastax.cassandra/cassandra-driver-core
-	compile group: 'com.datastax.cassandra', name: 'cassandra-driver-core', version: '3.0.5'
-	
+	compile 'com.datastax.cassandra:cassandra-driver-core:3.0.5'
 
     // Json
     compile 'com.google.code.gson:gson:2.3.1'
