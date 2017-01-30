@@ -113,7 +113,7 @@ public class RowUtils {
         });
         return array;
     }
-    
+
     private static String toDateString(Date date) {
         /* protect against multithreaded access of static dateFormat */
         synchronized ( RowUtils.class ) {
