@@ -115,6 +115,9 @@ public class RowUtils {
     }
 
     private static String toDateString(Date date) {
-        return date != null ? dateFormat.format(date) : null;
+        /* protect against multithreaded access of static dateFormat */
+        synchronized ( RowUtils.class ) {
+            return date != null ? dateFormat.format(date) : null;
+        }
     }
 }
