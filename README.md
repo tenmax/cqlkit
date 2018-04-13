@@ -37,8 +37,18 @@ File       The file to use as CQL query. If both FILE and QUERY are
  -c <arg>                            The contact point. if use multi
                                      contact points, use ',' to separate
                                      multi points
+    --connect-timeout <arg>          Connection timeout in seconds;
+                                     default: 5
+    --consistency <LEVEL>            The consistency level. The level
+                                     should be 'any', 'one', 'two',
+                                     'three', 'quorum', 'all',
+                                     'local_quorum', 'each_quorum',
+                                     'serial' or 'local_serial'.
     --cqlshrc <arg>                  Use an alternative cqlshrc file
                                      location, path.
+    --date-format <arg>              Use a custom date format. Default is
+                                     "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+    --fetchSize <SIZE>               The fetch size. Default is 5000
  -h,--help                           Show the help and exit
  -H,--no-header-row                  Do not output column names.
  -k <arg>                            The keyspace to use.
@@ -57,6 +67,8 @@ File       The file to use as CQL query. If both FILE and QUERY are
     --query-ranges <CQL>             The CQL query would be splitted by
                                      the token ranges. WHERE clause is not
                                      allowed in the CQL query
+    --request-timeout <arg>          Request timeout in seconds; default:
+                                     12
  -u <arg>                            The user to authenticate.
  -v,--version                        Print the version
 ```
@@ -69,9 +81,21 @@ usage: cql2json [-c contactpoint] [-q query] [FILE]
 File       The file to use as CQL query. If both FILE and QUERY are
            omitted, query will be read from STDIN.
 
- -c <arg>                            The contact point.
+ -c <arg>                            The contact point. if use multi
+                                     contact points, use ',' to separate
+                                     multi points
+    --connect-timeout <arg>          Connection timeout in seconds;
+                                     default: 5
+    --consistency <LEVEL>            The consistency level. The level
+                                     should be 'any', 'one', 'two',
+                                     'three', 'quorum', 'all',
+                                     'local_quorum', 'each_quorum',
+                                     'serial' or 'local_serial'.
     --cqlshrc <arg>                  Use an alternative cqlshrc file
                                      location, path.
+    --date-format <arg>              Use a custom date format. Default is
+                                     "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+    --fetchSize <SIZE>               The fetch size. Default is 5000
  -h,--help                           Show the help and exit
  -j,--json-columns <arg>             The columns that contains json
                                      string. The content would be used as
@@ -93,6 +117,8 @@ File       The file to use as CQL query. If both FILE and QUERY are
     --query-ranges <CQL>             The CQL query would be splitted by
                                      the token ranges. WHERE clause is not
                                      allowed in the CQL query
+    --request-timeout <arg>          Request timeout in seconds; default:
+                                     12
  -u <arg>                            The user to authenticate.
  -v,--version                        Print the version
 ```

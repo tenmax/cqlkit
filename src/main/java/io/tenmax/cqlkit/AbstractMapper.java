@@ -98,6 +98,18 @@ public abstract class AbstractMapper {
                 .build());
 
         options.addOption( "P", "parallel", true, "The level of parallelism to run the task. Default is sequential." );
+
+        options.addOption(Option.builder()
+                .longOpt("connect-timeout")
+                .hasArg(true)
+                .desc("Connection timeout in seconds; default: 5")
+                .build());
+
+        options.addOption(Option.builder()
+                .longOpt("request-timeout")
+                .hasArg(true)
+                .desc("Request timeout in seconds; default: 12")
+                .build());
     }
 
     abstract protected void printHelp(Options options);

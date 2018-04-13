@@ -4,6 +4,8 @@ import com.datastax.driver.core.*;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.configuration.HierarchicalINIConfiguration;
 import org.apache.commons.configuration.SubnodeConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
 
@@ -11,6 +13,8 @@ import java.util.Optional;
  * The class to manage the Cassandra Connection.
  */
 public class SessionFactory implements AutoCloseable{
+    private static final Logger logger = LoggerFactory.getLogger(SessionFactory.class);
+
     private static SessionFactory instance;
 
     private Cluster cluster;
@@ -51,14 +55,50 @@ public class SessionFactory implements AutoCloseable{
             }
         }
 
+
+        // Query Options
         if(commandLine.hasOption("fetchSize")) {
             int fetchSize = Integer.parseInt(commandLine.getOptionValue("fetchSize"));
             System.err.println("fetch size=" + fetchSize);
             builder.withQueryOptions(new QueryOptions().setFetchSize(fetchSize));
         }
 
-        cluster = builder.build();
 
+        // Socket Options
+        {
+            SocketOptions socketOptions = new SocketOptions();
+
+
+            if(commandLine.hasOption("connect-timeout")) {
+                int connectTimeout = Integer.parseInt(commandLine.getOptionValue("connect-timeout")) * 1000;
+                socketOptions.setConnectTimeoutMillis(connectTimeout);
+            } else {
+                rcOpt.map(rc -> rc.getSection("connection"))
+                        .map(conn -> conn.getString("timeout"))
+                        .ifPresent(value -> {
+                            int connectTimeout = Integer.parseInt(value) * 1000;
+                            socketOptions.setConnectTimeoutMillis(connectTimeout);
+                        });
+            }
+
+            if(commandLine.hasOption("request-timeout")) {
+                int requestTimeout = Integer.parseInt(commandLine.getOptionValue("request-timeout")) * 1000;
+                socketOptions.setReadTimeoutMillis(requestTimeout);
+            } else {
+                rcOpt.map(rc -> rc.getSection("connection"))
+                        .map(conn -> conn.getString("request_timeout"))
+                        .ifPresent(value -> {
+                            int requestTimeout = Integer.parseInt(value) * 1000;
+                            socketOptions.setReadTimeoutMillis(requestTimeout);
+                        });
+            }
+            builder.withSocketOptions(socketOptions);
+
+            logger.debug("connec timeout: {}", socketOptions.getConnectTimeoutMillis());
+            logger.debug("request timeout: {}", socketOptions.getReadTimeoutMillis());
+        }
+
+        cluster = builder.build();
         session = cluster.connect();
 
         // Change the db
