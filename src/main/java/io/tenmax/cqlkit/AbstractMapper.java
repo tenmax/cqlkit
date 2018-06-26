@@ -144,7 +144,7 @@ public abstract class AbstractMapper {
             commandLine = parser.parse( options, args );
 
             // validate that block-size has been set
-            if( commandLine.hasOption( "h" ) ) {
+            if( commandLine.getOptions().length == 0 || commandLine.hasOption( "h" ) ) {
                 printHelp(options);
             } else if( commandLine.hasOption( "v" ) ) {
                 printVersion();
