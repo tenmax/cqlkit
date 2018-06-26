@@ -27,6 +27,7 @@ public abstract class AbstractMapper {
     protected HierarchicalINIConfiguration cqlshrc;
     protected boolean lineNumberEnabled = false;
     protected boolean isRangeQuery = true;
+    protected boolean isDebugMode = false;
 
     protected AtomicInteger lineNumber = new AtomicInteger(1);
     protected Cluster cluster;
@@ -68,6 +69,7 @@ public abstract class AbstractMapper {
         options.addOption( "k", true, "The keyspace to use." );
         options.addOption( "v", "version", false, "Print the version" );
         options.addOption( "h", "help", false, "Show the help and exit" );
+        options.addOption( "d", "debug", false, "Enable debug mode" );
 
         options.addOption(Option.builder()
                 .longOpt("cqlshrc")
@@ -124,9 +126,18 @@ public abstract class AbstractMapper {
     abstract protected String map(Row row);
 
     public void start(String[] args) {
-        commandLine = parseArguments(args);
-        cqlshrc = parseCqlRc();
-        run();
+        try {
+            commandLine = parseArguments(args);
+            cqlshrc = parseCqlRc();
+            run();
+        } catch (Exception e) {
+            if (isDebugMode) {
+                e.printStackTrace();
+            } else {
+                System.err.println("Error: " + e.getMessage());
+            }
+            System.exit(1);
+        }
     }
 
     private CommandLine parseArguments(String[] args) {
@@ -170,6 +181,10 @@ public abstract class AbstractMapper {
                     System.err.println("Invalid date format: " + pattern);
                     printHelp(options);
                 }
+            }
+
+            if ( commandLine.hasOption("debug") ) {
+                isDebugMode = true;
             }
         } catch (ParseException e) {
             System.out.println( "Unexpected exception:" + e.getMessage() );
@@ -309,7 +324,11 @@ public abstract class AbstractMapper {
                                     continue;
                                 }
                                 System.err.println("Error when execute cql: " + cql);
-                                e.printStackTrace();
+                                if (isDebugMode) {
+                                    e.printStackTrace();
+                                } else {
+                                    System.err.println("Error: " + e.getMessage());
+                                }
                                 System.exit(1);
                             }
 
