@@ -30,7 +30,7 @@ cql2csv -q "select * from system.schema_columns"
 ## CQL2CSV
 
 ```
-usage: cql2csv [-c contactpoint] [-q query] [FILE]
+usage: cql2csv [-c contactpoint] [-r cassandraPort] [-q query] [FILE]
 File       The file to use as CQL query. If both FILE and QUERY are
            omitted, query will be read from STDIN.
 
@@ -57,6 +57,7 @@ File       The file to use as CQL query. If both FILE and QUERY are
                                      piping to grep or as a simple primary
                                      key.
  -p <arg>                            The password to authenticate.
+ -r <arg>                            The port to connect to Cassandra, defaults to 9042.
  -P,--parallel <arg>                 The level of parallelism to run the
                                      task. Default is sequential.
  -q,--query <CQL>                    The CQL query to execute. If
@@ -77,7 +78,7 @@ File       The file to use as CQL query. If both FILE and QUERY are
 
 ## CQL2JSON
 ```
-usage: cql2json [-c contactpoint] [-q query] [FILE]
+usage: cql2json [-c contactpoint] [-r cassandraPort] [-q query] [FILE]
 File       The file to use as CQL query. If both FILE and QUERY are
            omitted, query will be read from STDIN.
 
