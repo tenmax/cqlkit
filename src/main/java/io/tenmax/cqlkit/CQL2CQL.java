@@ -36,6 +36,7 @@ public class CQL2CQL extends AbstractMapper{
         options.addOption("T", "template", true, "The template of CQL statements. The format is " +
                 "the same as PreparedStatement.");
         options.getOption("T").setRequired(true);
+        options.addOption( "r", "port", true, "Cassandra Port" );
     }
 
     @Override
@@ -48,7 +49,7 @@ public class CQL2CQL extends AbstractMapper{
     protected  void printHelp(Options options) {
         HelpFormatter formatter = new HelpFormatter();
         String cmdLineSyntax =
-                "cql2cql [-c contactpoint] [-q query] [-T template] [FILE]";
+                "cql2cql [-c contactpoint] [-r CassandraPort] [-q query] [-T template] [FILE]";
         String header = "File       The file to use as CQL query. If both FILE and QUERY are \n" +
                 "           omitted, query will be read from STDIN.\n\n";
         formatter.printHelp(cmdLineSyntax, header, options, null);
