@@ -107,6 +107,7 @@ File       The file to use as CQL query. If both FILE and QUERY are
                                      piping to grep or as a simple primary
                                      key.
  -p <arg>                            The password to authenticate.
+ -r <arg>                            The port to connect to Cassandra, defaults to 9042.
  -P,--parallel <arg>                 The level of parallelism to run the
                                      task. Default is sequential.
  -q,--query <CQL>                    The CQL query to execute. If
