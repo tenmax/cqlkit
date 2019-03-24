@@ -22,6 +22,7 @@ public class CQL2CSV extends AbstractMapper{
         super.prepareOptions(options);
 
         options.addOption( "H", "no-header-row", false, "Do not output column names." );
+        options.addOption( "r", "port", true, "Cassandra Port" );
         options.addOption( "l", "linenumbers", false,
                 "Insert a column of line numbers at the front of the " +
                         "output. Useful when piping to grep or as a simple " +
@@ -38,7 +39,7 @@ public class CQL2CSV extends AbstractMapper{
     protected  void printHelp(Options options) {
         HelpFormatter formatter = new HelpFormatter();
         String cmdLineSyntax =
-                "cql2csv [-c contactpoint] [-q query] [FILE]";
+                "cql2csv [-c contactpoint] [-r CassandraPort] [-q query] [FILE]";
         String header = "File       The file to use as CQL query. If both FILE and QUERY are \n" +
                 "           omitted, query will be read from STDIN.\n\n";
         formatter.printHelp(cmdLineSyntax, header, options, null);

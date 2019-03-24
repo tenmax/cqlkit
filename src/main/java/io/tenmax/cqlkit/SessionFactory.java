@@ -28,6 +28,14 @@ public class SessionFactory implements AutoCloseable{
 
         Optional<HierarchicalINIConfiguration> rcOpt = Optional.ofNullable(cqlshrc);
 
+        int cassandraPort = 9042;
+
+        if(commandLine.hasOption("r")) {
+            cassandraPort = Integer.parseInt(commandLine.getOptionValue("r"));
+        }
+
+        builder.withPort(cassandraPort);
+
         if(commandLine.hasOption("c")) {
             builder.addContactPoints(commandLine.getOptionValue("c").split(","));
         } else {
