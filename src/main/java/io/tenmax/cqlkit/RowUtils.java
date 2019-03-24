@@ -66,6 +66,8 @@ public class RowUtils {
             case TIMESTAMP:
                 return new JsonPrimitive(toDateString((Date)value));
                 //return new JsonPrimitive(((Date)value).getTime());
+            case DATE:
+                return new JsonPrimitive(((LocalDate)value).toString());
             case LIST:
             case SET:
                 return collectionToJson(type, (Collection)value, jsonColumn);
