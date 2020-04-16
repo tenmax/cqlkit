@@ -6,13 +6,13 @@ Here is a simple some examples.
 Export JSON for the system columns in cassandra cluster.
  
 ```bash
-cql2json -q "select * from system.schema_columns"
+cql2json -q "select peer, data_center, host_id, preferred_ip, rack, release_version from system.peers"
 ```
 
 Export CSV for the system columns in cassandra cluster.
 
 ```bash
-cql2csv -q "select * from system.schema_columns"
+cql2csv -q "select peer, data_center, host_id, preferred_ip, rack, release_version from system.peers"
 ```
 
 # Requirement
@@ -21,9 +21,28 @@ cql2csv -q "select * from system.schema_columns"
 
 # Installation
 
+## General
+
 1. Download from [release](https://github.com/tenmax/cqlkit/releases) page.
 2. Unzip the package.
 3. Add `$CQLKIT_PATH/bin` to the *PATH* environment variable
+
+## Mac
+
+Install cqlkit via [Homebrew](http://brew.sh/).
+
+```bash
+brew tap tenmax/azure
+brew update
+brew install cqlkit
+```
+
+Upgrade azurekit
+
+```bash
+brew update
+brew upgrade cqlkit
+```
 
 
 # Usage
@@ -141,25 +160,6 @@ To connect to cassandra cluster, although we can use `-c` and `-k` to specify th
 
    ; vim: set ft=dosini :
    ```
-
-# Installation
-
-## Mac
-
-Install cqlkit via [Homebrew](http://brew.sh/).
-
-```bash
-brew tap tenmax/azure
-brew update
-brew install cqlkit
-```
-
-Upgrade azurekit
-
-```bash
-brew update
-brew upgrade cqlkit
-```
 
 # Recommended 3rd Party Tools
 
