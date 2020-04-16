@@ -40,6 +40,9 @@ public class RowUtils {
         TypeCodec<Object> typeCodec = CodecRegistry.DEFAULT_INSTANCE.codecFor(type);
         switch(type.getName()) {
             case BLOB:
+            case UUID:
+            case INET:
+            case TIMEUUID:
                 return new JsonPrimitive(typeCodec.format(value));
             case BOOLEAN:
                 return new JsonPrimitive((Boolean)value);
@@ -59,10 +62,6 @@ public class RowUtils {
                 } else {
                     return new JsonPrimitive((String) value);
                 }
-            case UUID:
-            case INET:
-            case TIMEUUID:
-                return new JsonPrimitive(typeCodec.format(value));
             case TIMESTAMP:
                 return new JsonPrimitive(toDateString((Date)value));
                 //return new JsonPrimitive(((Date)value).getTime());
@@ -117,7 +116,7 @@ public class RowUtils {
     }
 
     private static String toDateString(Date date) {
-        /* protect against multithreaded access of static dateFormat */
+        /* protect against multi threaded access of static dateFormat */
         synchronized ( RowUtils.class ) {
             return date != null ? dateFormat.format(date) : null;
         }

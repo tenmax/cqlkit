@@ -1,7 +1,5 @@
-
 apply plugin: 'java'
 apply plugin: 'application'
-
 repositories {
     jcenter()
 }
@@ -13,48 +11,50 @@ startScripts {
     applicationName = 'cql2csv'
 }
 
-task createAllStartScripts() << {
+task createAllStartScripts() {
+    def scripts = ['cql2csv' : 'io.tenmax.cqlkit.CQL2CSV',
+                   'cql2json': 'io.tenmax.cqlkit.CQL2JSON',
+                   'cql2cql' : 'io.tenmax.cqlkit.CQL2CQL'
+    ]
+    scripts.each() { scriptName, className ->
+        def t = tasks.create(name: scriptName+'StartScript', type: CreateStartScripts) {
+            mainClassName = className
+            applicationName = scriptName
+            outputDir = new File(project.buildDir, 'scripts')
+            classpath = jar.outputs.files + project.configurations.runtimeClasspath
+        }
+        applicationDistribution.into("bin") {
+            duplicatesStrategy = 'exclude'
+            from(t)
+            fileMode = 0755
+        }
+    }
 }
 
-def scripts = [ 'cql2csv': 'io.tenmax.cqlkit.CQL2CSV',
-                'cql2json':'io.tenmax.cqlkit.CQL2JSON',
-                'cql2cql':'io.tenmax.cqlkit.CQL2CQL'
-]
-    scripts.each() { scriptName, className ->
-    def t = tasks.create(name: scriptName+'StartScript', type: CreateStartScripts) {
-        mainClassName = className
-        applicationName = scriptName
-        outputDir = new File(project.buildDir, 'scripts')
-        classpath = jar.outputs.files + project.configurations.runtime
-    }
-    applicationDistribution.into("bin") {
-        from(t)
-        fileMode = 0755
-    }
-    createAllStartScripts.dependsOn(t)
-}
+sourceCompatibility = '1.8'
+targetCompatibility = '1.8'
 
 dependencies {
     // Cassandra Driver
-	compile 'com.datastax.cassandra:cassandra-driver-core:3.4.0'
+    implementation 'com.datastax.cassandra:cassandra-driver-core:3.4.0'
 
     // Json
-    compile 'com.google.code.gson:gson:2.3.1'
+    implementation 'com.google.code.gson:gson:2.3.1'
 
     // CSV
-    compile 'org.apache.commons:commons-csv:1.1'
+    implementation 'org.apache.commons:commons-csv:1.1'
 
     // CLI
-    compile 'commons-cli:commons-cli:1.3.1'
+    implementation 'commons-cli:commons-cli:1.3.1'
 
     // Log
-    compile 'org.slf4j:slf4j-api:1.7.12'
-    compile 'org.slf4j:slf4j-nop:1.7.12'
+    implementation 'org.slf4j:slf4j-api:1.7.12'
+    implementation 'org.slf4j:slf4j-nop:1.7.12'
 
     // Configure
-    compile 'commons-configuration:commons-configuration:1.10'
+    implementation 'commons-configuration:commons-configuration:1.10'
 
 
     ///////////////////////////////////////////////
-    testCompile 'junit:junit:4.12'
+    testImplementation 'junit:junit:4.12'
 }
