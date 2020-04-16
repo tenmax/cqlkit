@@ -133,15 +133,34 @@ To connect to cassandra cluster, although we can use `-c` and `-k` to specify th
 
    ```bash
    [authentication]
-	keyspace = system
+   keyspace = system
 
-	[connection]
-	hostname = 192.168.59.103
-	port = 9042
+   [connection]
+   hostname = 192.168.59.103
+   port = 9042
 
-	; vim: set ft=dosini :
+   ; vim: set ft=dosini :
    ```
-      
+
+# Installation
+
+## Mac
+
+Install cqlkit via [Homebrew](http://brew.sh/).
+
+```bash
+brew tap tenmax/azure
+brew update
+brew install cqlkit
+```
+
+Upgrade azurekit
+
+```bash
+brew update
+brew upgrade cqlkit
+```
+
 # Recommended 3rd Party Tools
 
 - [csvkit](https://csvkit.readthedocs.org/en/0.9.1/) - A toolkit to handle CSV files. There are many useful CLI tools included. 
