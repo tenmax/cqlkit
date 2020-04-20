@@ -6,9 +6,12 @@ import com.datastax.driver.core.Row;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.stream.JsonWriter;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 
+import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.Collection;
@@ -20,14 +23,17 @@ public class CQL2JSON extends AbstractMapper{
     private ColumnDefinitions.Definition[] definitions;
     private Gson gson = new Gson();
     private HashSet<String> jsonColumns = new HashSet<>();
+    private JsonWriter jsonWriter;
 
     @Override
     protected void prepareOptions(Options options) {
         super.prepareOptions(options);
 
-        options.addOption( "j", "json-columns", true, "The columns that contains json string. " +
-                "The content would be used as json object instead of plain text. " +
+        options.addOption( "j", "json-columns", true, "The columns that contains JSON string. " +
+                "The content would be used as JSON object instead of plain text. " +
                 "Columns are separated by comma." );
+        options.addOption( "a", "array-output", false, "Use JSON array to wrap JSON objects " +
+                "instead of JSON lines." );
         options.addOption( "l", "linenumbers", false,
                 "Insert a column of line numbers at the front of the " +
                         "output. Useful when piping to grep or as a simple " +
@@ -101,6 +107,44 @@ public class CQL2JSON extends AbstractMapper{
         }
 
         return gson.toJson(root);
+    }
+
+    @Override
+    public void writeHead() {
+        if (commandLine.hasOption("a")) {
+            try {
+                jsonWriter = new JsonWriter(new OutputStreamWriter(System.out));
+                jsonWriter.beginArray();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    @Override
+    public void writeBody(String line)  {
+        if (commandLine.hasOption("a")) {
+            try {
+                jsonWriter.jsonValue(line);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } else {
+            System.out.println(line);
+        }
+    }
+
+    @Override
+    public void writeTail() {
+        if (commandLine.hasOption("a")) {
+            try {
+                jsonWriter.endArray();
+                jsonWriter.flush();
+                jsonWriter.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     public static void main(String[] args) {

@@ -187,7 +187,7 @@ public abstract class AbstractMapper {
                 isDebugMode = true;
             }
         } catch (ParseException e) {
-            System.out.println( "Unexpected exception:" + e.getMessage() );
+            System.err.println( "Unexpected exception:" + e.getMessage() );
             System.exit(1);
         }
         return commandLine;
@@ -239,6 +239,7 @@ public abstract class AbstractMapper {
 
         List<CompletableFuture<Void>> futures = new ArrayList<>();
 
+        writeHead();
         try(SessionFactory sessionFactory = SessionFactory.newInstance(commandLine, cqlshrc)) {
             cluster = sessionFactory.getCluster();
             session = sessionFactory.getSession();
@@ -311,9 +312,8 @@ public abstract class AbstractMapper {
                                 StreamSupport
                                         .stream(rs.spliterator(), false)
                                         .map(this::map)
-                                        .forEach(out::println);
+                                        .forEach(this::writeBody);
                             } catch (Exception e) {
-
                                 if (retryCount < retry) {
                                     retryCount++;
                                     System.err.printf("%s - Retry %d cql: %s\n", new Date(), retryCount, cql);
@@ -366,6 +366,7 @@ public abstract class AbstractMapper {
                     in.close();
                 } catch (IOException e) {}
             }
+            writeTail();
         }
     }
 
@@ -474,9 +475,7 @@ public abstract class AbstractMapper {
                             .toString();
 
                     cqlList.add(cql);
-
                 }
-
 
                 return cqlList.stream();
             })
@@ -499,5 +498,15 @@ public abstract class AbstractMapper {
         }
 
         return Arrays.asList(keyspace, table);
+    }
+
+    public void writeHead() {
+    }
+
+    public void writeBody(String object) {
+        System.out.println(object);
+    }
+
+    public void writeTail() {
     }
 }
