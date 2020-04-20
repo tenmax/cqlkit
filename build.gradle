@@ -5,10 +5,13 @@ repositories {
 }
 
 mainClassName = 'io.tenmax.cqlkit.CQL2CSV'
+version = 'v0.3.1'
 
-
-startScripts {
-    applicationName = 'cql2csv'
+jar {
+    manifest {
+        attributes 'Implementation-Title': 'cqlkit',
+                   'Implementation-Version': project.version
+    }
 }
 
 task createAllStartScripts() {
@@ -17,7 +20,7 @@ task createAllStartScripts() {
                    'cql2cql' : 'io.tenmax.cqlkit.CQL2CQL'
     ]
     scripts.each() { scriptName, className ->
-        def t = tasks.create(name: scriptName+'StartScript', type: CreateStartScripts) {
+        def t = tasks.create(name: scriptName + 'StartScript', type: CreateStartScripts) {
             mainClassName = className
             applicationName = scriptName
             outputDir = new File(project.buildDir, 'scripts')
@@ -28,6 +31,18 @@ task createAllStartScripts() {
             from(t)
             fileMode = 0755
         }
+    }
+}
+
+tasks.distTar.enabled = false
+
+distZip {
+    archiveFileName = archiveBaseName.get() + '.' + archiveExtension.get()
+    def noVersionFile = archiveFile.get().asFile
+    doLast {
+        archiveFileName = archiveBaseName.get() + '-' + archiveVersion.get() + '.' + archiveExtension.get()
+        def versionFile = archiveFile.get().asFile
+        noVersionFile.renameTo(versionFile)
     }
 }
 
