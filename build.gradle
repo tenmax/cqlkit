@@ -5,7 +5,7 @@ repositories {
 }
 
 mainClassName = 'io.tenmax.cqlkit.CQL2CSV'
-version = 'v0.3.1'
+version = '0.3.1'
 
 jar {
     manifest {
