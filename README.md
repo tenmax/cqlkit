@@ -37,7 +37,7 @@ brew update
 brew install cqlkit
 ```
 
-Upgrade azurekit
+Upgrade cqlkit
 
 ```bash
 brew update

@@ -34,8 +34,6 @@ task createAllStartScripts() {
     }
 }
 
-tasks.distTar.enabled = false
-
 distZip {
     archiveFileName = archiveBaseName.get() + '.' + archiveExtension.get()
     def noVersionFile = archiveFile.get().asFile
@@ -44,6 +42,24 @@ distZip {
         def versionFile = archiveFile.get().asFile
         noVersionFile.renameTo(versionFile)
     }
+}
+
+distTar {
+    archiveFileName = archiveBaseName.get() + '.' + archiveExtension.get()
+    def noVersionFile = archiveFile.get().asFile
+    doLast {
+        archiveFileName = archiveBaseName.get() + '-' + archiveVersion.get() + '.' + archiveExtension.get()
+        def versionFile = archiveFile.get().asFile
+        noVersionFile.renameTo(versionFile)
+    }
+}
+
+task fpm(type: Exec, dependsOn: build, group: 'build') {
+    commandLine './build-rpm-deb.sh', project.version
+}
+
+wrapper {
+    distributionType = Wrapper.DistributionType.ALL
 }
 
 sourceCompatibility = '1.8'
