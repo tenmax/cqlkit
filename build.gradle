@@ -5,16 +5,20 @@ repositories {
 }
 
 mainClassName = 'io.tenmax.cqlkit.CQL2CSV'
+project.version = '0.3.2'
+def impVersion = project.version
+
 if (project.hasProperty('projVersion')) {
     project.version = project.projVersion
-} else {
-    project.version = '0.3.1'
+    if (project.projVersion == 'latest') {
+        impVersion += '-SNAPSHOT'
+    }
 }
 
 jar {
     manifest {
         attributes 'Implementation-Title': 'cqlkit',
-                   'Implementation-Version': project.version
+                   'Implementation-Version': impVersion
     }
 }
 

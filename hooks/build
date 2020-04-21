@@ -1,0 +1,5 @@
+#!/bin/bash
+echo "=> Building the binary"
+docker build \
+    --build-arg DOCKER_TAG=$DOCKER_TAG \
+    -t $IMAGE_NAME .
