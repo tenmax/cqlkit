@@ -44,6 +44,13 @@ brew update
 brew upgrade cqlkit
 ```
 
+## Docker
+
+Run cqlkit via [Docker](https://hub.docker.com/r/tenmax/cqlkit).
+
+```bash
+ docker run --rm -it tenmax/cqlkit
+ ```
 
 # Usage
 ## CQL2CSV
