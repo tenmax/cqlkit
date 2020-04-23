@@ -32,7 +32,7 @@ cql2csv -q "select peer, data_center, host_id, preferred_ip, rack, release_versi
 Install cqlkit via [Homebrew](http://brew.sh/).
 
 ```bash
-brew tap tenmax/azure
+brew tap tenmax/tap
 brew update
 brew install cqlkit
 ```
