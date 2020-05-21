@@ -6,8 +6,10 @@ import com.datastax.driver.core.querybuilder.Select;
 import org.apache.commons.cli.*;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.HierarchicalINIConfiguration;
+import sun.misc.Unsafe;
 
 import java.io.*;
+import java.lang.reflect.Field;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -127,6 +129,7 @@ public abstract class AbstractMapper {
 
     public void start(String[] args) {
         try {
+            disableWarning();
             commandLine = parseArguments(args);
             cqlshrc = parseCqlRc();
             run();
@@ -508,5 +511,19 @@ public abstract class AbstractMapper {
     }
 
     public void writeTail() {
+    }
+
+    private static void disableWarning() {
+        try {
+            Field theUnsafe = Unsafe.class.getDeclaredField("theUnsafe");
+            theUnsafe.setAccessible(true);
+            Unsafe u = (Unsafe) theUnsafe.get(null);
+
+            Class cls = Class.forName("jdk.internal.module.IllegalAccessLogger");
+            Field logger = cls.getDeclaredField("logger");
+            u.putObjectVolatile(cls, u.staticFieldOffset(logger), null);
+        } catch (Exception e) {
+            // ignore
+        }
     }
 }
