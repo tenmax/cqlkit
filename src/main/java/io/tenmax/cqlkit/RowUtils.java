@@ -11,12 +11,20 @@ import java.util.*;
 public class RowUtils {
     private static DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
 
+    static {
+        dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+    }
+
     public static String toString(
         DataType type,
         Object value)
     {
     	TypeCodec<Object> typeCodec = CodecRegistry.DEFAULT_INSTANCE.codecFor(type);
-        if(typeCodec.getJavaType().getRawType().getName().equals(String.class.getName())) {
+    	if (value == null) {
+    	    return null;
+        }
+
+    	if(typeCodec.getJavaType().getRawType().getName().equals(String.class.getName())) {
             return (String) value;
         } else if(typeCodec.getJavaType().getRawType().getName().equals(InetAddress.class.getName())) {
             return ((InetAddress) value).getHostAddress();
@@ -26,8 +34,6 @@ public class RowUtils {
             return typeCodec.format(value);
         }
     }
-
-
 
     public static JsonElement toJson(
             DataType type,
