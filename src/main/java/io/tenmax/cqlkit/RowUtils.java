@@ -128,7 +128,7 @@ public class RowUtils {
 
     private static String toDateString(Date date) {
         /* protect against multi threaded access of static dateFormat */
-        synchronized ( RowUtils.class ) {
+        synchronized (RowUtils.class) {
             return date != null ? dateFormat.format(date) : null;
         }
     }

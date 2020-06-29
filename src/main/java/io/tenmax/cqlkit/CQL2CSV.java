@@ -21,9 +21,9 @@ public class CQL2CSV extends AbstractMapper{
     protected void prepareOptions(Options options) {
         super.prepareOptions(options);
 
-        options.addOption( "H", "no-header-row", false, "Do not output column names." );
-        options.addOption( "r", "port", true, "Cassandra Port" );
-        options.addOption( "l", "linenumbers", false,
+        options.addOption("H", "no-header-row", false, "Do not output column names.");
+        options.addOption("r", "port", true, "Cassandra Port");
+        options.addOption("l", "linenumbers", false,
                 "Insert a column of line numbers at the front of the " +
                         "output. Useful when piping to grep or as a simple " +
                         "primary key.");
