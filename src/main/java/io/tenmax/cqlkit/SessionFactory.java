@@ -65,9 +65,9 @@ public class SessionFactory implements AutoCloseable{
 
 
         // Query Options
-        if(commandLine.hasOption("fetchSize")) {
-            int fetchSize = Integer.parseInt(commandLine.getOptionValue("fetchSize"));
-            System.err.println("fetch size=" + fetchSize);
+        if(commandLine.hasOption("fetch-size")) {
+            int fetchSize = Integer.parseInt(commandLine.getOptionValue("fetch-size"));
+            logger.debug("fetch size: {}", fetchSize);
             builder.withQueryOptions(new QueryOptions().setFetchSize(fetchSize));
         }
 

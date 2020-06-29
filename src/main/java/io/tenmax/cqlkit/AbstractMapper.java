@@ -89,7 +89,7 @@ public abstract class AbstractMapper {
 
         options.addOption(Option
                 .builder()
-                .longOpt("fetchSize")
+                .longOpt("fetch-size")
                 .hasArg(true)
                 .argName("SIZE")
                 .desc("The fetch size. Default is " + QueryOptions.DEFAULT_FETCH_SIZE)
@@ -104,7 +104,7 @@ public abstract class AbstractMapper {
         options.addOption(Option.builder()
                 .longOpt("time-zone")
                 .hasArg(true)
-                .desc("Use a custom time zone. Default is \"UTC\"")
+                .desc("Use a custom time zone. Default is UTC")
                 .build());
 
         options.addOption( "P", "parallel", true, "The level of parallelism to run the task. Default is sequential." );
@@ -112,13 +112,13 @@ public abstract class AbstractMapper {
         options.addOption(Option.builder()
                 .longOpt("connect-timeout")
                 .hasArg(true)
-                .desc("Connection timeout in seconds; default: 5")
+                .desc("Connection timeout in seconds. Default is 5")
                 .build());
 
         options.addOption(Option.builder()
                 .longOpt("request-timeout")
                 .hasArg(true)
-                .desc("Request timeout in seconds; default: 12")
+                .desc("Request timeout in seconds. Default is 12")
                 .build());
     }
 
