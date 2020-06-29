@@ -98,7 +98,13 @@ public abstract class AbstractMapper {
         options.addOption(Option.builder()
                 .longOpt("date-format")
                 .hasArg(true)
-                .desc("Use a custom date format. Default is \"yyyy-MM-dd'T'HH:mm:ss.SSSZ\"")
+                .desc("Use a custom date format. Default is \"yyyy-MM-dd' 'HH:mm:ss.SSSZ\"")
+                .build());
+
+        options.addOption(Option.builder()
+                .longOpt("time-zone")
+                .hasArg(true)
+                .desc("Use a custom time zone. Default is \"UTC\"")
                 .build());
 
         options.addOption( "P", "parallel", true, "The level of parallelism to run the task. Default is sequential." );
@@ -182,6 +188,16 @@ public abstract class AbstractMapper {
                     RowUtils.setDateFormat(pattern);
                 } catch (Exception e) {
                     System.err.println("Invalid date format: " + pattern);
+                    printHelp(options);
+                }
+            }
+
+            if( commandLine.hasOption("time-zone")) {
+                String timeZone = commandLine.getOptionValue("time-zone");
+                try {
+                    RowUtils.setTimeZone(timeZone);
+                } catch (Exception e) {
+                    System.err.println("Invalid time zone: " + timeZone);
                     printHelp(options);
                 }
             }
