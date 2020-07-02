@@ -36,7 +36,7 @@ public class CQL2CQL extends AbstractMapper{
         options.addOption("T", "template", true, "The template of CQL statements. The format is " +
                 "the same as PreparedStatement.");
         options.getOption("T").setRequired(true);
-        options.addOption( "r", "port", true, "Cassandra Port" );
+        options.addOption("r", "port", true, "Cassandra Port");
     }
 
     @Override

@@ -29,16 +29,16 @@ public class CQL2JSON extends AbstractMapper{
     protected void prepareOptions(Options options) {
         super.prepareOptions(options);
 
-        options.addOption( "j", "json-columns", true, "The columns that contains JSON string. " +
+        options.addOption("j", "json-columns", true, "The columns that contains JSON string. " +
                 "The content would be used as JSON object instead of plain text. " +
-                "Columns are separated by comma." );
-        options.addOption( "a", "array-output", false, "Use JSON array to wrap JSON objects " +
-                "instead of JSON lines." );
-        options.addOption( "l", "linenumbers", false,
+                "Columns are separated by comma.");
+        options.addOption("a", "array-output", false, "Use JSON array to wrap JSON objects " +
+                "instead of JSON lines.");
+        options.addOption("l", "linenumbers", false,
                 "Insert a column of line numbers at the front of the " +
                         "output. Useful when piping to grep or as a simple " +
                         "primary key.");
-        options.addOption( "r", "port", true, "Cassandra Port" );
+        options.addOption("r", "port", true, "Cassandra Port");
     }
 
     @Override

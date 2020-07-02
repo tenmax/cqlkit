@@ -35,7 +35,7 @@ public abstract class AbstractMapper {
     protected Cluster cluster;
     protected Session session;
     private AtomicInteger completeJobs = new AtomicInteger(0);
-    private  int totalJobs;
+    private int totalJobs;
 
     protected void prepareOptions(Options options) {
         OptionGroup queryGroup = new OptionGroup();
@@ -65,13 +65,13 @@ public abstract class AbstractMapper {
         options.addOptionGroup(queryGroup);
 
 
-        options.addOption( "c", true, "The contact point. if use multi contact points, use ',' to separate multi points" );
-        options.addOption( "u", true, "The user to authenticate." );
-        options.addOption( "p", true, "The password to authenticate." );
-        options.addOption( "k", true, "The keyspace to use." );
-        options.addOption( "v", "version", false, "Print the version" );
-        options.addOption( "h", "help", false, "Show the help and exit" );
-        options.addOption( "d", "debug", false, "Enable debug mode" );
+        options.addOption("c", true, "The contact point. if use multi contact points, use ',' to separate multi points");
+        options.addOption("u", true, "The user to authenticate.");
+        options.addOption("p", true, "The password to authenticate.");
+        options.addOption("k", true, "The keyspace to use.");
+        options.addOption("v", "version", false, "Print the version");
+        options.addOption("h", "help", false, "Show the help and exit");
+        options.addOption("d", "debug", false, "Enable debug mode");
 
         options.addOption(Option.builder()
                 .longOpt("cqlshrc")
@@ -79,17 +79,15 @@ public abstract class AbstractMapper {
                 .desc("Use an alternative cqlshrc file location, path.")
                 .build());
 
-        options.addOption(Option
-                .builder()
+        options.addOption(Option.builder()
                 .longOpt("consistency")
                 .hasArg(true)
                 .argName("LEVEL")
                 .desc("The consistency level. The level should be 'any', 'one', 'two', 'three', 'quorum', 'all', 'local_quorum', 'each_quorum', 'serial' or 'local_serial'.")
                 .build());
 
-        options.addOption(Option
-                .builder()
-                .longOpt("fetchSize")
+        options.addOption(Option.builder()
+                .longOpt("fetch-size")
                 .hasArg(true)
                 .argName("SIZE")
                 .desc("The fetch size. Default is " + QueryOptions.DEFAULT_FETCH_SIZE)
@@ -98,21 +96,27 @@ public abstract class AbstractMapper {
         options.addOption(Option.builder()
                 .longOpt("date-format")
                 .hasArg(true)
-                .desc("Use a custom date format. Default is \"yyyy-MM-dd'T'HH:mm:ss.SSSZ\"")
+                .desc("Use a custom date format. Default is \"yyyy-MM-dd' 'HH:mm:ss.SSSZ\"")
                 .build());
 
-        options.addOption( "P", "parallel", true, "The level of parallelism to run the task. Default is sequential." );
+        options.addOption(Option.builder()
+                .longOpt("time-zone")
+                .hasArg(true)
+                .desc("Use a custom time zone. Default is UTC")
+                .build());
+
+        options.addOption("P", "parallel", true, "The level of parallelism to run the task. Default is sequential." );
 
         options.addOption(Option.builder()
                 .longOpt("connect-timeout")
                 .hasArg(true)
-                .desc("Connection timeout in seconds; default: 5")
+                .desc("Connection timeout in seconds. Default is 5")
                 .build());
 
         options.addOption(Option.builder()
                 .longOpt("request-timeout")
                 .hasArg(true)
-                .desc("Request timeout in seconds; default: 12")
+                .desc("Request timeout in seconds. Default is 12")
                 .build());
     }
 
@@ -120,10 +124,7 @@ public abstract class AbstractMapper {
 
     abstract protected void printVersion();
 
-    protected void head(
-            ColumnDefinitions columnDefinitions,
-            PrintStream out){
-    }
+    protected void head(ColumnDefinitions columnDefinitions, PrintStream out) {}
 
     abstract protected String map(Row row);
 
@@ -155,18 +156,18 @@ public abstract class AbstractMapper {
 
         try {
             // parse the command line arguments
-            commandLine = parser.parse( options, args );
+            commandLine = parser.parse(options, args);
 
             // validate that block-size has been set
-            if( commandLine.getOptions().length == 0 || commandLine.hasOption( "h" ) ) {
+            if (commandLine.getOptions().length == 0 || commandLine.hasOption("h")) {
                 printHelp(options);
-            } else if( commandLine.hasOption( "v" ) ) {
+            } else if (commandLine.hasOption("v")) {
                 printVersion();
             } else {
 
             }
 
-            if( commandLine.hasOption("consistency")) {
+            if (commandLine.hasOption("consistency")) {
                 String consistency = commandLine.getOptionValue("consistency");
                 try {
                     ConsistencyLevel.valueOf(consistency.toUpperCase());
@@ -176,7 +177,7 @@ public abstract class AbstractMapper {
                 }
             }
 
-            if( commandLine.hasOption("date-format")) {
+            if (commandLine.hasOption("date-format")) {
                 String pattern = commandLine.getOptionValue("date-format");
                 try {
                     RowUtils.setDateFormat(pattern);
@@ -186,30 +187,37 @@ public abstract class AbstractMapper {
                 }
             }
 
-            if ( commandLine.hasOption("debug") ) {
+            if (commandLine.hasOption("time-zone")) {
+                String timeZone = commandLine.getOptionValue("time-zone");
+                try {
+                    RowUtils.setTimeZone(timeZone);
+                } catch (Exception e) {
+                    System.err.println("Invalid time zone: " + timeZone);
+                    printHelp(options);
+                }
+            }
+
+            if (commandLine.hasOption("debug")) {
                 isDebugMode = true;
             }
         } catch (ParseException e) {
-            System.err.println( "Unexpected exception:" + e.getMessage() );
+            System.err.println("Unexpected exception:" + e.getMessage());
             System.exit(1);
         }
         return commandLine;
     }
 
     private HierarchicalINIConfiguration parseCqlRc() {
-
-
-
         File file = new File(System.getProperty("user.home") + "/.cassandra/cqlshrc");
         if (commandLine.hasOption("cqlshrc")) {
             file = new File(commandLine.getOptionValue("cqlshrc"));
-            if(!file.exists()) {
+            if (!file.exists()) {
                 System.err.println("cqlshrc file not found: " + file);
                 System.exit(-1);
             }
         }
 
-        if(file.exists()) {
+        if (file.exists()) {
             try {
                 HierarchicalINIConfiguration configuration = new HierarchicalINIConfiguration(file);
                 return configuration;
@@ -228,14 +236,14 @@ public abstract class AbstractMapper {
         int parallelism = 1;
         Executor executor = null;
 
-        if(commandLine.hasOption("P")) {
+        if (commandLine.hasOption("P")) {
             parallelism = Integer.parseInt(commandLine.getOptionValue("parallel"));
-        } else if(commandLine.hasOption("query-ranges") ||
+        } else if (commandLine.hasOption("query-ranges") ||
                   commandLine.hasOption("query-partition-keys")) {
             parallelism = Runtime.getRuntime().availableProcessors();
         }
 
-        if(parallelism > 1) {
+        if (parallelism > 1) {
             executor = new ForkJoinPool(parallelism);
             parallel = true;
         }
@@ -289,12 +297,12 @@ public abstract class AbstractMapper {
             while(cqls.hasNext()) {
                 final String cql = cqls.next().trim();
 
-                if(cql.isEmpty()) {
+                if (cql.isEmpty()) {
                     continue;
                 }
 
                 // Get the result set definitions.
-                if(isFirstCQL) {
+                if (isFirstCQL) {
                     ResultSet rs = session.execute(cql);
                     head(rs.getColumnDefinitions(), out);
                     isFirstCQL = false;
@@ -338,7 +346,7 @@ public abstract class AbstractMapper {
                             break;
                         }
                     } finally {
-                        if(_parallel) {
+                        if (_parallel) {
                             System.err.printf("Progress: %d/%d\n",
                                     completeJobs.incrementAndGet(),
                                     totalJobs);
@@ -346,7 +354,7 @@ public abstract class AbstractMapper {
                     }
                 };
 
-                if(parallel) {
+                if (parallel) {
                     futures.add(CompletableFuture.runAsync(task, executor));
                 } else {
                     task.run();
@@ -355,7 +363,7 @@ public abstract class AbstractMapper {
             }
 
             // Wait for all futures completion
-            if(parallel) {
+            if (parallel) {
                 CompletableFuture
                         .allOf(futures.toArray(new CompletableFuture[]{}))
                         .join();
@@ -364,7 +372,7 @@ public abstract class AbstractMapper {
         } catch (IOException e) {
             throw new RuntimeException(e);
         } finally {
-            if(in != null) {
+            if (in != null) {
                 try {
                     in.close();
                 } catch (IOException e) {}
@@ -378,7 +386,7 @@ public abstract class AbstractMapper {
 
         String query = commandLine.getOptionValue("query-ranges");
 
-        if(query.contains("where")) {
+        if (query.contains("where")) {
             System.err.println("WHERE is not allowed in query");
             System.exit(1);
         }
@@ -387,13 +395,13 @@ public abstract class AbstractMapper {
         String keyspace = strings.get(0);
         String table = strings.get(1);
 
-        if(table == null) {
+        if (table == null) {
             System.err.println("Invalid query: " + query);
         }
 
-        if(keyspace == null) {
+        if (keyspace == null) {
             keyspace = session.getLoggedKeyspace();
-            if(keyspace == null) {
+            if (keyspace == null) {
                 System.err.println("no keyspace specified");
                 System.exit(1);
             }
@@ -439,13 +447,13 @@ public abstract class AbstractMapper {
         Iterator<String> cqls;
         String keyspace = session.getLoggedKeyspace();
         String table = commandLine.getOptionValue("query-partition-keys");
-        if(keyspace == null) {
+        if (keyspace == null) {
             System.err.println("no keyspace specified");
             System.exit(1);
         }
 
         TableMetadata tableMetadata = cluster.getMetadata().getKeyspace(keyspace).getTable(table);
-        if(tableMetadata == null) {
+        if (tableMetadata == null) {
             System.err.printf("table '%s' does not exist\n", table);
             System.exit(1);
         }
@@ -494,7 +502,7 @@ public abstract class AbstractMapper {
 
         Pattern pattern = Pattern.compile(regex);
         Matcher matcher = pattern.matcher(query);
-        if(matcher.find()) {
+        if (matcher.find()) {
             keyspace = matcher.group("keyspace");
             table = matcher.group("table");
 
@@ -503,15 +511,13 @@ public abstract class AbstractMapper {
         return Arrays.asList(keyspace, table);
     }
 
-    public void writeHead() {
-    }
+    public void writeHead() {}
 
     public void writeBody(String object) {
         System.out.println(object);
     }
 
-    public void writeTail() {
-    }
+    public void writeTail() {}
 
     private static void disableWarning() {
         try {

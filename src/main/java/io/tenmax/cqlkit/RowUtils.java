@@ -9,7 +9,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class RowUtils {
-    private static DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
+    private static DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd' 'HH:mm:ss.SSSZ");
 
     static {
         dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
@@ -89,6 +89,11 @@ public class RowUtils {
 
     public static void setDateFormat(String pattern) {
         dateFormat = new SimpleDateFormat(pattern);
+        dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+    }
+
+    public static void setTimeZone(String timeZone) {
+        dateFormat.setTimeZone(TimeZone.getTimeZone(timeZone));
     }
 
     private static JsonElement mapToJson(
@@ -123,7 +128,7 @@ public class RowUtils {
 
     private static String toDateString(Date date) {
         /* protect against multi threaded access of static dateFormat */
-        synchronized ( RowUtils.class ) {
+        synchronized (RowUtils.class) {
             return date != null ? dateFormat.format(date) : null;
         }
     }
