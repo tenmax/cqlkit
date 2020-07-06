@@ -150,7 +150,8 @@ File       The file to use as CQL query. If both FILE and QUERY are
  -v,--version                        Print the version
 ```
 
-# Setup the cqlshrc
+# cqlsh
+## Setup the cqlshrc
 To connect to cassandra cluster, although we can use `-c` and `-k` to specify the contact server and keyspace respectively, to preapre a [cqlshrc](http://docs.datastax.com/en/cql/3.1/cql/cql_reference/cqlsh.html#refCqlsh__cqlshUsingCqlshrc) is recommended to simply your query. *cqlshrc* is used by cqlsh. *cqlkit* leverages this file to connect to your cluster. Here is the setup steps.
 
 1. Create the cqlshrc file at `~/.cassandra/cqlshrc`
@@ -166,6 +167,15 @@ To connect to cassandra cluster, although we can use `-c` and `-k` to specify th
 
    ; vim: set ft=dosini :
    ```
+
+## Import data from a CSV file
+
+```
+$ cql2csv -q "select text_col from ks.tbl" > example.csv
+
+$ ./cqlsh localhost
+cqlsh> COPY ks.tbl FROM 'example.csv' WITH ESCAPE='"' AND HEADER=TRUE
+```
 
 # Recommended 3rd Party Tools
 
